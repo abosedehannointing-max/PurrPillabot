@@ -4,7 +4,6 @@ import re
 import random
 from datetime import datetime, timedelta
 from typing import Dict
-import aiohttp
 
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
@@ -59,28 +58,9 @@ class StoryGenerator:
         "And they lived, not just happily, but meaningfully ever after.",
     ]
     
-    # Story themes
-    THEMES = {
-        "love": ["romance", "heartwarming", "emotional"],
-        "horror": ["scary", "suspenseful", "dark"],
-        "adventure": ["exciting", "action-packed", "thrilling"],
-        "fantasy": ["magical", "whimsical", "epic"],
-        "mystery": ["puzzling", "intriguing", "clever"],
-        "inspirational": ["motivational", "uplifting", "hopeful"],
-        "sad": ["emotional", "touching", "heartfelt"],
-        "funny": ["humorous", "entertaining", "lighthearted"],
-    }
-    
     @staticmethod
     def generate_story(topic: str, part_number: int, total_parts: int = 10) -> dict:
         """Generate a complete story or story part"""
-        
-        # Determine theme based on topic
-        theme = "inspirational"
-        for key in StoryGenerator.THEMES:
-            if key in topic.lower():
-                theme = key
-                break
         
         if total_parts == 1:
             # Complete short story
