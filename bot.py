@@ -10,87 +10,55 @@ BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
 
 if not BOT_TOKEN:
-    print("❌ ERROR: TELEGRAM_BOT_TOKEN not set!")
+    print("❌ កំហុស: រកមិនឃើញ TELEGRAM_BOT_TOKEN!")
     exit(1)
 
-print(f"✅ Story Bot starting...")
-print(f"✅ OpenAI: {'Connected' if OPENAI_API_KEY else 'Not configured'}")
+print(f"✅ កំពុងចាប់ផ្តើម Bot បង្កើតរឿង...")
+print(f"✅ OpenAI: {'បានភ្ជាប់' if OPENAI_API_KEY else 'មិនទាន់កំណត់រចនាសម្ព័ន្ធ'}")
 
 # Initialize OpenAI client if API key provided
 openai_client = AsyncOpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
 
-# Language translations
-LANGUAGES = {
-    'en': {
-        'name': 'English',
-        'welcome': "📖 *STORY GENERATOR BOT* 📖\n\nSimply send me a story title, and I'll create a beautiful story for you!\n\n*Examples:*\n`The Lost Key`\n`A Girl Who Found Magic`\n`The Last Rainbow`\n`Love in the Rain`\n\n*Commands:*\n/help - Show this message\n/language - Change language\n/genre [type] - Set genre (love, horror, adventure, fantasy)\n/status - Show current settings\n\n✨ *Just type any story title and I'll write it!* ✨",
-        'help': "📖 *STORY GENERATOR BOT* 📖\n\nSimply send me a story title, and I'll create a beautiful story for you!\n\n*Examples:*\n`The Lost Key`\n`A Girl Who Found Magic`\n`The Last Rainbow`\n`Love in the Rain`\n\n*Commands:*\n/help - Show this message\n/language - Change language\n/genre [type] - Set genre (love, horror, adventure, fantasy)\n/status - Show current settings",
-        'genre_list': "📖 *Current Genres Available:*\n\n• love - Romance stories\n• horror - Scary stories\n• adventure - Action/Adventure\n• fantasy - Magic/Fantasy\n• mystery - Detective/Mystery\n• inspirational - Uplifting stories\n\nUsage: `/genre love`",
-        'genre_set': "✅ Genre set to: *{genre}*\n\nNow send me any story title!",
-        'invalid_genre': "❌ Invalid genre. Choose: love, horror, adventure, fantasy, mystery, inspirational",
-        'status': "📊 *Bot Status*\n\n🎨 Current genre: *{genre}*\n🤖 AI: {'Connected' if OPENAI_API_KEY else 'Not connected'}\n🌐 Language: {lang}\n\n✨ Send me any story title to generate a story!",
-        'writing': "📖 Writing story about *{title}*... (AI is working)",
-        'language_changed': "✅ Language changed to English!",
-        'select_language': "🌐 *Select your language:*",
-        'error': "❌ Error generating story: {error}"
-    },
-    'km': {
-        'name': 'ភាសាខ្មែរ (Khmer)',
-        'welcome': "📖 *BOT បង្កើតរឿង* 📖\n\nគ្រាន់តែផ្ញើចំណងជើងរឿងមកខ្ញុំ ខ្ញុំនឹងបង្កើតរឿងដ៏ស្រស់ស្អាតមួយសម្រាប់អ្នក!\n\n*ឧទាហរណ៍:*\n`កូនសោរដែលបាត់បង់`\n`ក្មេងស្រីដែលបានរកឃើញមន្តអាគម`\n`ឥន្ទធនូចុងក្រោយ`\n`ស្នេហាក្នុងភ្លៀង`\n\n*ពាក្យបញ្ជា:*\n/help - បង្ហាញសារនេះ\n/language - ផ្លាស់ប្តូរភាសា\n/genre [ប្រភេទ] - កំណត់ប្រភេទរឿង (ស្នេហា, ភ័យរន្ធត់, ដំណើរផ្សងព្រេង, រវើរវាយ)\n/status - បង្ហាញស្ថានភាពបច្ចុប្បន្ន\n\n✨ *គ្រាន់តែវាយបញ្ចូលចំណងជើងរឿង ខ្ញុំនឹងសរសេរវាឱ្យអ្នក!* ✨",
-        'help': "📖 *BOT បង្កើតរឿង* 📖\n\nគ្រាន់តែផ្ញើចំណងជើងរឿងមកខ្ញុំ ខ្ញុំនឹងបង្កើតរឿងដ៏ស្រស់ស្អាតមួយសម្រាប់អ្នក!\n\n*ឧទាហរណ៍:*\n`កូនសោរដែលបាត់បង់`\n`ក្មេងស្រីដែលបានរកឃើញមន្តអាគម`\n`ឥន្ទធនូចុងក្រោយ`\n`ស្នេហាក្នុងភ្លៀង`\n\n*ពាក្យបញ្ជា:*\n/help - បង្ហាញសារនេះ\n/language - ផ្លាស់ប្តូរភាសា\n/genre [ប្រភេទ] - កំណត់ប្រភេទរឿង (ស្នេហា, ភ័យរន្ធត់, ដំណើរផ្សងព្រេង, រវើរវាយ)\n/status - បង្ហាញស្ថានភាពបច្ចុប្បន្ន",
-        'genre_list': "📖 *ប្រភេទរឿងដែលមាន:*\n\n• love - រឿងស្នេហា\n• horror - រឿងភ័យរន្ធត់\n• adventure - រឿងដំណើរផ្សងព្រេង\n• fantasy - រឿងរវើរវាយ\n• mystery - រឿងអាថ៌កំបាំង\n• inspirational - រឿងបំផុសគំនិត\n\nការប្រើប្រាស់: `/genre love`",
-        'genre_set': "✅ បានកំណត់ប្រភេទទៅ: *{genre}*\n\nឥឡូវផ្ញើចំណងជើងរឿងមកខ្ញុំ!",
-        'invalid_genre': "❌ ប្រភេទមិនត្រឹមត្រូវ។ សូមជ្រើសរើស: love, horror, adventure, fantasy, mystery, inspirational",
-        'status': "📊 *ស្ថានភាព Bot*\n\n🎨 ប្រភេទបច្ចុប្បន្ន: *{genre}*\n🤖 AI: {'Connected' if OPENAI_API_KEY else 'មិនទាន់ភ្ជាប់'}\n🌐 ភាសា: {lang}\n\n✨ ផ្ញើចំណងជើងរឿងណាមួយមកដើម្បីបង្កើតរឿង!",
-        'writing': "📖 កំពុងសរសេររឿងអំពី *{title}*... (AI កំពុងដំណើរការ)",
-        'language_changed': "✅ បានប្តូរភាសាទៅជាភាសាខ្មែរ!",
-        'select_language': "🌐 *ជ្រើសរើសភាសារបស់អ្នក:*",
-        'error': "❌ កំហុសក្នុងការបង្កើតរឿង: {error}"
-    }
-}
-
-# ============ STORY GENERATOR ============
+# ============ ប្រព័ន្ធបង្កើតរឿង ============
 class StoryGenerator:
     
     @staticmethod
-    async def generate_story(title: str, genre: str = "general", lang: str = "en") -> str:
-        """Generate a story based on title using OpenAI"""
+    async def generate_story(title: str, genre: str = "general") -> str:
+        """បង្កើតរឿងដោយផ្អែកលើចំណងជើង ដោយប្រើ OpenAI"""
         
         if not openai_client:
-            return "❌ OpenAI API key not configured. Please add OPENAI_API_KEY to environment variables."
+            return "❌ មិនទាន់កំណត់ OpenAI API key ។ សូមបន្ថែម OPENAI_API_KEY ទៅក្នុងអថេរបរិស្ថាន។"
         
-        # Language-specific prompts
-        prompts = {
-            'en': f"""Write a short, engaging story based on this title: "{title}"
-
-The story should be:
-- Genre: {genre}
-- Length: 300-500 words
-- Have a clear beginning, middle, and end
-- Be captivating and emotional
-- Include a meaningful message or lesson
-
-Format the story nicely with paragraphs, emojis, and a proper ending.""",
-            
-            'km': f"""សូមសរសេររឿងខ្លីមួយដោយផ្អែកលើចំណងជើងនេះ: "{title}"
-
-រឿងគួរតែ:
-- ប្រភេទ: {genre}
-- ប្រវែង: ៣០០-៥០០ ពាក្យ
-- មានចំណុចចាប់ផ្តើម កណ្តាល និងបញ្ចប់ច្បាស់លាស់
-- ទាក់ទាញ និងរំជួលចិត្ត
-- រួមបញ្ចូលសារឬមេរៀនដ៏មានអត្ថន័យ
-
-រៀបចំរឿងឱ្យស្អាតជាមួយកថាខណ្ឌ រូបសញ្ញា និងការបញ្ចប់ដ៏សមរម្យ។"""
+        # Genre translations
+        genre_khmer = {
+            'love': 'រឿងស្នេហា',
+            'horror': 'រឿងភ័យរន្ធត់',
+            'adventure': 'រឿងដំណើរផ្សងព្រេង',
+            'fantasy': 'រឿងរវើរវាយ',
+            'mystery': 'រឿងអាថ៌កំបាំង',
+            'inspirational': 'រឿងបំផុសគំនិត',
+            'general': 'រឿងទូទៅ'
         }
         
+        genre_display = genre_khmer.get(genre, genre)
+        
         try:
-            prompt = prompts.get(lang, prompts['en'])
+            prompt = f"""សូមសរសេររឿងខ្លីមួយដោយផ្អែកលើចំណងជើងនេះ: "{title}"
+
+តម្រូវការរឿង:
+- ប្រភេទ: {genre_display}
+- ប្រវែង: ៣០០-៥០០ ពាក្យ
+- មានចំណុចចាប់ផ្តើម កណ្តាល និងបញ្ចប់ច្បាស់លាស់
+- គួរឱ្យចាប់អារម្មណ៍ និងទាក់ទាញ
+- មានអត្ថន័យ ឬមេរៀនល្អៗ
+
+សូមរៀបចំរឿងឱ្យស្អាត មានកថាខណ្ឌ រូបសញ្ញា និងការបញ្ចប់ដ៏សមរម្យ។
+សរសេរជាភាសាខ្មែរឱ្យបានត្រឹមត្រូវ និងធម្មជាតិ។"""
             
             response = await openai_client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[
-                    {"role": "system", "content": "You are a professional storyteller. Write beautiful, engaging stories that captivate readers."},
+                    {"role": "system", "content": "អ្នកគឺជាអ្នកនិទានរឿងអាជីព។ អ្នកសរសេររឿងដ៏ស្រស់ស្អាត ទាក់ទាញ និងធ្វើឱ្យអ្នកអានចាប់អារម្មណ៍។ សរសេរជាភាសាខ្មែរឱ្យបានត្រឹមត្រូវ។"},
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.8,
@@ -98,125 +66,163 @@ Format the story nicely with paragraphs, emojis, and a proper ending.""",
             )
             
             story = response.choices[0].message.content
-            
-            # Add ending based on language
-            if lang == 'km':
-                story += f"\n\n✨ *ចប់* ✨\n\n#{title.replace(' ', '')} #រឿង #StoryTime"
-            else:
-                story += f"\n\n✨ *The End* ✨\n\n#{title.replace(' ', '')} #StoryTime"
+            story += f"\n\n✨ *ចប់* ✨\n\n#{title.replace(' ', '')} #រឿង #StoryTime"
             
             return story
             
         except Exception as e:
-            return LANGUAGES[lang]['error'].format(error=str(e))
+            return f"❌ កំហុសក្នុងការបង្កើតរឿង: {str(e)}"
 
 # ============ BOT ============
 class StoryBot:
     
     async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        user_id = update.effective_user.id
-        lang = context.user_data.get('language', 'en')
-        
-        # Create inline keyboard for language
-        keyboard = [
-            [InlineKeyboardButton("🌐 Change Language", callback_data="change_language")]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        
-        await update.message.reply_text(
-            LANGUAGES[lang]['welcome'],
-            parse_mode="Markdown",
-            reply_markup=reply_markup
-        )
+        """ពាក្យបញ្ជា /start - ចាប់ផ្តើម Bot"""
+        welcome_text = """
+📖 *BOT បង្កើតរឿង* 📖
+
+សួស្តី! ខ្ញុំជា Bot បង្កើតរឿងដោយប្រើបញ្ញាសិប្បនិម្មិត (AI)។
+
+*របៀបប្រើប្រាស់៖*
+គ្រាន់តែផ្ញើចំណងជើងរឿងមកខ្ញុំ ខ្ញុំនឹងបង្កើតរឿងដ៏ស្រស់ស្អាតមួយសម្រាប់អ្នក!
+
+*ឧទាហរណ៍ចំណងជើង៖*
+• `កូនសោរដែលបាត់បង់`
+• `ក្មេងស្រីដែលបានរកឃើញមន្តអាគម`
+• `ឥន្ទធនូចុងក្រោយ`
+• `ស្នេហាក្នុងភ្លៀង`
+• `អ្នកចម្បាំងទឹកកក`
+
+*ពាក្យបញ្ជាផ្សេងទៀត៖*
+/help - បង្ហាញជំនួយ
+/genre - កំណត់ប្រភេទរឿង
+/status - បង្ហាញស្ថានភាពបច្ចុប្បន្ន
+
+✨ *សាកល្បងឥឡូវនេះ - គ្រាន់តែវាយបញ្ចូលចំណងជើងរឿង!* ✨
+"""
+        await update.message.reply_text(welcome_text, parse_mode="Markdown")
     
     async def help(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        lang = context.user_data.get('language', 'en')
-        await update.message.reply_text(LANGUAGES[lang]['help'], parse_mode="Markdown")
-    
-    async def language_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Show language selection menu"""
-        keyboard = []
-        for lang_code, lang_data in LANGUAGES.items():
-            keyboard.append([InlineKeyboardButton(f"🌐 {lang_data['name']}", callback_data=f"lang_{lang_code}")])
-        
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        await update.message.reply_text(
-            LANGUAGES['en']['select_language'],
-            reply_markup=reply_markup,
-            parse_mode='Markdown'
-        )
+        """ពាក្យបញ្ជា /help - បង្ហាញជំនួយ"""
+        help_text = """
+📖 *ជំនួយប្រើប្រាស់ Bot* 📖
+
+*របៀបប្រើប្រាស់៖*
+1. វាយបញ្ចូលចំណងជើងរឿងណាមួយ
+2. Bot នឹងបង្កើតរឿងដោយស្វ័យប្រវត្តិ
+3. រីករាយជាមួយរឿងដែលបានបង្កើត!
+
+*ពាក្យបញ្ជាទាំងអស់៖*
+/start - ចាប់ផ្តើម Bot
+/help - បង្ហាញជំនួយនេះ
+/genre - កំណត់ប្រភេទរឿង
+/status - បង្ហាញស្ថានភាពបច្ចុប្បន្ន
+
+*ឧទាហរណ៍ចំណងជើងរឿង៖*
+• ដំណើរផ្សងព្រេងក្នុងព្រៃ
+• ក្តីស្រមៃរបស់ក្មេងកំព្រា
+• ស្នេហ៍ឆ្លងកាល
+• អាថ៌កំបាំងប្រាសាទបុរាណ
+• ទេវតាអាណាព្យាបាល
+
+💡 *ការណែនាំ៖* ចំណងជើងកាន់តែលម្អិត រឿងនឹងកាន់តែល្អ!
+"""
+        await update.message.reply_text(help_text, parse_mode="Markdown")
     
     async def set_genre(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        user_id = update.effective_user.id
+        """ពាក្យបញ្ជា /genre - កំណត់ប្រភេទរឿង"""
         args = context.args
-        lang = context.user_data.get('language', 'en')
+        
+        # Genre keyboard
+        genre_keyboard = [
+            [InlineKeyboardButton("💖 ស្នេហា", callback_data="genre_love")],
+            [InlineKeyboardButton("👻 ភ័យរន្ធត់", callback_data="genre_horror")],
+            [InlineKeyboardButton("⚔️ ដំណើរផ្សងព្រេង", callback_data="genre_adventure")],
+            [InlineKeyboardButton("✨ រវើរវាយ", callback_data="genre_fantasy")],
+            [InlineKeyboardButton("🕵️ អាថ៌កំបាំង", callback_data="genre_mystery")],
+            [InlineKeyboardButton("🌟 បំផុសគំនិត", callback_data="genre_inspirational")],
+            [InlineKeyboardButton("📖 ទូទៅ", callback_data="genre_general")]
+        ]
+        reply_markup = InlineKeyboardMarkup(genre_keyboard)
         
         if not args:
             await update.message.reply_text(
-                LANGUAGES[lang]['genre_list'],
+                "📖 *ជ្រើសរើសប្រភេទរឿងដែលអ្នកចូលចិត្ត៖*\n\nចុចលើប៊ូតុងខាងក្រោម៖",
+                reply_markup=reply_markup,
                 parse_mode="Markdown"
             )
             return
         
+        # If user types genre manually
         genre = args[0].lower()
-        valid_genres = ["love", "horror", "adventure", "fantasy", "mystery", "inspirational"]
-        
-        if genre not in valid_genres:
-            await update.message.reply_text(LANGUAGES[lang]['invalid_genre'])
-            return
-        
-        # Store user genre preference
-        context.user_data['genre'] = genre
-        
-        # Translate genre name for display
-        genre_names = {
-            'love': 'ស្នេហា' if lang == 'km' else 'Love',
-            'horror': 'ភ័យរន្ធត់' if lang == 'km' else 'Horror',
-            'adventure': 'ដំណើរផ្សងព្រេង' if lang == 'km' else 'Adventure',
-            'fantasy': 'រវើរវាយ' if lang == 'km' else 'Fantasy',
-            'mystery': 'អាថ៌កំបាំង' if lang == 'km' else 'Mystery',
-            'inspirational': 'បំផុសគំនិត' if lang == 'km' else 'Inspirational'
+        valid_genres = {
+            "love": "💖 ស្នេហា",
+            "horror": "👻 ភ័យរន្ធត់", 
+            "adventure": "⚔️ ដំណើរផ្សងព្រេង",
+            "fantasy": "✨ រវើរវាយ",
+            "mystery": "🕵️ អាថ៌កំបាំង",
+            "inspirational": "🌟 បំផុសគំនិត",
+            "general": "📖 ទូទៅ"
         }
         
-        display_genre = genre_names.get(genre, genre.capitalize())
+        if genre not in valid_genres:
+            await update.message.reply_text(
+                f"❌ ប្រភេទ '{genre}' មិនត្រឹមត្រូវទេ។\n\n"
+                f"ប្រភេទដែលមាន៖ love, horror, adventure, fantasy, mystery, inspirational, general"
+            )
+            return
         
+        context.user_data['genre'] = genre
         await update.message.reply_text(
-            LANGUAGES[lang]['genre_set'].format(genre=display_genre),
+            f"✅ បានកំណត់ប្រភេទរឿងទៅ: *{valid_genres[genre]}*\n\n"
+            f"ឥឡូវអ្នកអាចផ្ញើចំណងជើងរឿងមកខ្ញុំបាន!",
             parse_mode="Markdown"
         )
     
     async def status(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """ពាក្យបញ្ជា /status - បង្ហាញស្ថានភាព"""
         genre = context.user_data.get('genre', 'general')
-        lang = context.user_data.get('language', 'en')
         
-        # Translate genre for display
         genre_names = {
-            'love': 'ស្នេហា' if lang == 'km' else 'Love',
-            'horror': 'ភ័យរន្ធត់' if lang == 'km' else 'Horror',
-            'adventure': 'ដំណើរផ្សងព្រេង' if lang == 'km' else 'Adventure',
-            'fantasy': 'រវើរវាយ' if lang == 'km' else 'Fantasy',
-            'mystery': 'អាថ៌កំបាំង' if lang == 'km' else 'Mystery',
-            'inspirational': 'បំផុសគំនិត' if lang == 'km' else 'Inspirational',
-            'general': 'ទូទៅ' if lang == 'km' else 'General'
+            'love': '💖 ស្នេហា',
+            'horror': '👻 ភ័យរន្ធត់',
+            'adventure': '⚔️ ដំណើរផ្សងព្រេង',
+            'fantasy': '✨ រវើរវាយ',
+            'mystery': '🕵️ អាថ៌កំបាំង',
+            'inspirational': '🌟 បំផុសគំនិត',
+            'general': '📖 ទូទៅ'
         }
         
-        display_genre = genre_names.get(genre, genre.capitalize())
+        display_genre = genre_names.get(genre, '📖 ទូទៅ')
+        ai_status = 'បានភ្ជាប់ ✓' if OPENAI_API_KEY else 'មិនទាន់ភ្ជាប់ ✗'
         
-        lang_name = 'ភាសាខ្មែរ' if lang == 'km' else 'English'
-        
-        await update.message.reply_text(
-            LANGUAGES[lang]['status'].format(genre=display_genre, lang=lang_name),
-            parse_mode="Markdown"
-        )
+        status_text = f"""
+📊 *ស្ថានភាព Bot*
+
+━━━━━━━━━━━━━━━━━━
+🎨 *ប្រភេទរឿងបច្ចុប្បន្ន:* {display_genre}
+
+🤖 *ស្ថានភាព AI:* {ai_status}
+
+📝 *ចំនួនរឿងដែលបានបង្កើត:* {context.user_data.get('story_count', 0)}
+
+━━━━━━━━━━━━━━━━━━
+
+✨ *ផ្ញើចំណងជើងរឿងណាមួយមក ដើម្បីបង្កើតរឿងថ្មី!*
+"""
+        await update.message.reply_text(status_text, parse_mode="Markdown")
     
     async def handle_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        user_id = update.effective_user.id
+        """ដំណើរការសារពីអ្នកប្រើប្រាស់"""
         title = update.message.text.strip()
-        lang = context.user_data.get('language', 'en')
         
         # Skip if it's a command
         if title.startswith('/'):
             return
+        
+        # Update story count
+        story_count = context.user_data.get('story_count', 0)
+        context.user_data['story_count'] = story_count + 1
         
         # Get user's preferred genre
         genre = context.user_data.get('genre', 'general')
@@ -226,67 +232,72 @@ class StoryBot:
         
         # Send initial message
         status_msg = await update.message.reply_text(
-            LANGUAGES[lang]['writing'].format(title=title),
+            f"📖 *កំពុងសរសេររឿងអំពី* \"{title}\" *...*\n\n"
+            f"🤖 AI កំពុងបង្កើតរឿងដ៏ស្រស់ស្អាតសម្រាប់អ្នក (សូមរងចាំបន្តិច)",
             parse_mode="Markdown"
         )
         
         # Generate story
-        story = await StoryGenerator.generate_story(title, genre, lang)
+        story = await StoryGenerator.generate_story(title, genre)
         
         # Edit the status message with the story
         await status_msg.edit_text(story, parse_mode="Markdown")
     
     async def button_callback(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Handle button presses"""
+        """ដំណើរការការចុចប៊ូតុង"""
         query = update.callback_query
         await query.answer()
         
-        # Handle language selection
-        if query.data.startswith("lang_"):
-            new_lang = query.data.replace("lang_", "")
-            context.user_data['language'] = new_lang
+        # Handle genre selection from buttons
+        if query.data.startswith("genre_"):
+            genre = query.data.replace("genre_", "")
+            context.user_data['genre'] = genre
+            
+            genre_names = {
+                'love': '💖 ស្នេហា',
+                'horror': '👻 ភ័យរន្ធត់',
+                'adventure': '⚔️ ដំណើរផ្សងព្រេង',
+                'fantasy': '✨ រវើរវាយ',
+                'mystery': '🕵️ អាថ៌កំបាំង',
+                'inspirational': '🌟 បំផុសគំនិត',
+                'general': '📖 ទូទៅ'
+            }
+            
+            display_genre = genre_names.get(genre, '📖 ទូទៅ')
+            
             await query.edit_message_text(
-                LANGUAGES[new_lang]['language_changed'],
-                parse_mode='Markdown'
-            )
-        
-        elif query.data == "change_language":
-            keyboard = []
-            for lang_code, lang_data in LANGUAGES.items():
-                keyboard.append([InlineKeyboardButton(f"🌐 {lang_data['name']}", callback_data=f"lang_{lang_code}")])
-            reply_markup = InlineKeyboardMarkup(keyboard)
-            await query.edit_message_text(
-                LANGUAGES['en']['select_language'],
-                reply_markup=reply_markup,
-                parse_mode='Markdown'
+                f"✅ *បានកំណត់ប្រភេទរឿងទៅ:* {display_genre}\n\n"
+                f"ឥឡូវអ្នកអាចផ្ញើចំណងជើងរឿងមកខ្ញុំបាន!\n\n"
+                f"💡 *ឧទាហរណ៍:* \"ដំណើរផ្សងព្រេងក្នុងព្រៃ\"",
+                parse_mode="Markdown"
             )
 
 # ============ MAIN ============
 async def main():
-    print("🚀 Starting Story Bot...")
+    print("🚀 កំពុងចាប់ផ្តើម Bot បង្កើតរឿង...")
     
     application = Application.builder().token(BOT_TOKEN).build()
     bot = StoryBot()
     
+    # Add command handlers
     application.add_handler(CommandHandler("start", bot.start))
     application.add_handler(CommandHandler("help", bot.help))
-    application.add_handler(CommandHandler("language", bot.language_command))
     application.add_handler(CommandHandler("genre", bot.set_genre))
     application.add_handler(CommandHandler("status", bot.status))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, bot.handle_message))
     application.add_handler(CallbackQueryHandler(bot.button_callback))
     
-    print("📡 Starting polling...")
+    print("📡 កំពុងភ្ជាប់ទៅ Telegram...")
     await application.initialize()
     await application.start()
     await application.updater.start_polling()
     
-    print("✅ Story Bot is LIVE!")
-    print("📖 Ready to generate stories!")
-    print("🌐 Supported languages: English, Khmer")
+    print("✅ Bot បង្កើតរឿងបានដំណើរការដោយជោគជ័យ!")
+    print("📖 រួចរាល់ក្នុងការបង្កើតរឿងជាភាសាខ្មែរ!")
+    print("💡 គ្រាន់តែផ្ញើចំណងជើងរឿងមក Bot!")
     
     await asyncio.Event().wait()
 
 if __name__ == "__main__":
-    print("🌟 STORY BOT DEPLOYING...")
+    print("🌟 កំពុងដាក់ពង្រាយ Bot...")
     asyncio.run(main())
